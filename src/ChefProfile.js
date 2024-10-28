@@ -1,0 +1,1 @@
+const ChefProfile = () => <h1>Chef Profile</h1>; export default ChefProfile;

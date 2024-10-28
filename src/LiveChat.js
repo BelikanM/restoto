@@ -1,0 +1,1 @@
+const LiveChat = () => <h1>Live Chat</h1>; export default LiveChat;

@@ -1,0 +1,1 @@
+const SearchBar = () => <input type="text" placeholder="Search for recipes or dishes" />; export default SearchBar;

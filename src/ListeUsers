@@ -1,0 +1,75 @@
+import React, { useEffect, useState } from 'react';
+import { db } from './firebaseConfig';
+import { collection, getDocs, updateDoc, doc, onSnapshot, arrayUnion, arrayRemove } from 'firebase/firestore';
+
+const ListeUsers = ({ currentUser }) => {
+  const [users, setUsers] = useState([]);
+  const [following, setFollowing] = useState([]);
+
+  // Récupérer les utilisateurs
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setUsers(usersData);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Récupérer la liste des abonnements de l'utilisateur connecté
+  useEffect(() => {
+    if (currentUser) {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const unsubscribe = onSnapshot(userRef, (doc) => {
+        if (doc.exists()) {
+          setFollowing(doc.data().following || []);
+        }
+      });
+      return unsubscribe;
+    }
+  }, [currentUser]);
+
+  // Gérer le bouton "Follow"
+  const toggleFollow = async (userId) => {
+    if (!currentUser) return;
+
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      if (following.includes(userId)) {
+        await updateDoc(userRef, {
+          following: arrayRemove(userId)
+        });
+      } else {
+        await updateDoc(userRef, {
+          following: arrayUnion(userId)
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors du suivi de l'utilisateur :", error);
+    }
+  };
+
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg shadow-lg w-full max-w-lg h-96 overflow-y-auto">
+      <h2 className="text-2xl font-bold mb-4 text-white">Liste des Utilisateurs</h2>
+      {users.map((user) => (
+        <div key={user.id} className="flex items-center justify-between bg-gray-700 p-3 rounded-lg mb-2">
+          <div className="flex items-center">
+            <img src={user.profilePicture || '/default-profile.png'} alt={user.displayName} className="w-10 h-10 rounded-full mr-3" />
+            <div>
+              <p className="text-white font-semibold">{user.displayName}</p>
+              <p className="text-gray-400 text-sm">{user.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => toggleFollow(user.id)}
+            className={`py-1 px-3 rounded-full text-sm font-semibold ${following.includes(user.id) ? 'bg-red-600' : 'bg-blue-600'} text-white`}
+          >
+            {following.includes(user.id) ? 'Unfollow' : 'Follow'}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default ListeUsers;

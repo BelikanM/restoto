@@ -1,0 +1,1 @@
+const RecipeStreaming = () => <h1>Watch Recipe Streaming</h1>; export default RecipeStreaming;

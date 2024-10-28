@@ -1,0 +1,101 @@
+/* Signup.css */
+
+.signup {
+    max-width: 600px; /* Limiter la largeur de la page */
+    margin: 0 auto; /* Centrer la page */
+    padding: 20px; /* Ajouter un peu de padding */
+    border: 1px solid #ccc; /* Bordure légère */
+    border-radius: 8px; /* Coins arrondis */
+    background-color: #f9f9f9; /* Couleur de fond */
+}
+
+h1 {
+    text-align: center; /* Centrer le titre */
+    color: #333; /* Couleur du texte */
+}
+
+form {
+    display: flex; /* Utiliser le flexbox */
+    flex-direction: column; /* Alignement vertical */
+    margin-bottom: 20px; /* Espacement en bas */
+}
+
+input[type="text"],
+input[type="url"],
+textarea,
+input[type="file"] {
+    margin: 10px 0; /* Espacement vertical */
+    padding: 10px; /* Padding interne */
+    border: 1px solid #ccc; /* Bordure légère */
+    border-radius: 4px; /* Coins arrondis */
+    font-size: 16px; /* Taille de police */
+}
+
+textarea {
+    resize: vertical; /* Permettre le redimensionnement vertical */
+    min-height: 100px; /* Hauteur minimale */
+}
+
+button {
+    padding: 10px; /* Padding interne */
+    border: none; /* Supprimer la bordure par défaut */
+    border-radius: 4px; /* Coins arrondis */
+    background-color: #007bff; /* Couleur de fond du bouton */
+    color: white; /* Couleur du texte */
+    font-size: 16px; /* Taille de police */
+    cursor: pointer; /* Changer le curseur */
+}
+
+button:hover {
+    background-color: #0056b3; /* Couleur au survol */
+}
+
+.posts {
+    margin-top: 20px; /* Espacement en haut */
+}
+
+.post {
+    border: 1px solid #e0e0e0; /* Bordure des posts */
+    border-radius: 8px; /* Coins arrondis */
+    padding: 15px; /* Padding interne */
+    margin-bottom: 15px; /* Espacement entre les posts */
+    background-color: white; /* Couleur de fond des posts */
+}
+
+.post h2 {
+    margin: 0; /* Supprimer la marge par défaut */
+    font-size: 18px; /* Taille de police pour le titre */
+}
+
+.post p {
+    margin: 10px 0; /* Espacement vertical pour la description */
+}
+
+img {
+    max-width: 100%; /* Rendre l'image responsive */
+    border-radius: 4px; /* Coins arrondis pour les images */
+}
+
+ul {
+    list-style-type: none; /* Supprimer les puces de la liste */
+    padding: 0; /* Supprimer le padding par défaut */
+}
+
+li {
+    display: flex; /* Utiliser le flexbox */
+    justify-content: space-between; /* Espacement entre le texte et le bouton */
+    align-items: center; /* Centrer verticalement */
+    padding: 10px; /* Padding interne */
+    border: 1px solid #e0e0e0; /* Bordure légère */
+    border-radius: 4px; /* Coins arrondis */
+    margin-bottom: 10px; /* Espacement entre les utilisateurs */
+    background-color: #f0f0f0; /* Couleur de fond des utilisateurs */
+}
+
+li button {
+    background-color: #28a745; /* Couleur du bouton "Suivre" */
+}
+
+li button:hover {
+    background-color: #218838; /* Couleur au survol du bouton "Suivre" */
+}

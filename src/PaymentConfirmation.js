@@ -1,0 +1,1 @@
+const PaymentConfirmation = () => <h1>Payment Confirmation</h1>; export default PaymentConfirmation;

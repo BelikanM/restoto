@@ -1,43 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  
+  <title>Starviews App</title>
+  
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="/starviews64.png">
+  
+  <!-- Normalize CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </body>
+  <!-- Bootstrap CSS -->
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/styles.css" />
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Ajoutez ici vos classes et styles personnalisés */
+  </style>
+
+</head>
+<body>
+  <div id="root">
+    <h1>Bienvenue sur l'application Starviews</h1>
+    <p>Cette page démontre que l'application fonctionne correctement.</p>
+    <button id="installButton" style="display: none;">Installer l'application</button>
+    <div class="offline-message" style="display: none;">
+      Vous êtes actuellement hors ligne. Certaines fonctionnalités peuvent être limitées.
+    </div>
+  </div>
+
+  <!-- Application scripts -->
+  <script src="/static/js/runtime-main.js"></script>
+  <script src="/static/js/vendor.js"></script>
+  <script src="/static/js/main.js"></script>
+
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
+
+  <!-- Bootstrap JS -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  
+  <!-- FontAwesome JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js" crossorigin="anonymous"></script>
+
+  <!-- Custom JS -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('Service Worker enregistré avec succès:', registration.scope);
+          })
+          .catch(error => {
+            console.log('Échec de l\'enregistrement du Service Worker:', error);
+          });
+      });
+    }
+
+    // Gestion de l'installation
+    const installButton = document.getElementById('installButton');
+
+    window.addEventListener('message', (event) => {
+      if (event.data.action === 'showInstallButton') {
+        installButton.style.display = 'block';
+      }
+    });
+
+    installButton.addEventListener('click', () => {
+      navigator.serviceWorker.controller.postMessage({ action: 'installApp' });
+      installButton.style.display = 'none';
+    });
+
+    // Gestion du statut hors ligne
+    function updateOfflineStatus() {
+      const offlineMessage = document.querySelector('.offline-message');
+      if (!navigator.onLine) {
+        offlineMessage.style.display = 'block';
+      } else {
+        offlineMessage.style.display = 'none';
+      }
+    }
+
+    window.addEventListener('online', updateOfflineStatus);
+    window.addEventListener('offline', updateOfflineStatus);
+    updateOfflineStatus(); // Vérification initiale
+  </script>
+</body>
 </html>

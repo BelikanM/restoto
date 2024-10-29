@@ -1,28 +1,21 @@
-// src/firebaseConfig.js
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDzv_LUBeWx33dYuPLjlsTEV_ueDe7Vme4",
-  authDomain: "tbfiscal-3cf9d.firebaseapp.com",
-  projectId: "tbfiscal-3cf9d",
-  storageBucket: "tbfiscal-3cf9d.appspot.com",
-  messagingSenderId: "193333685760",
-  appId: "1:193333685760:web:dac76e493a8f9da23572e5",
-  measurementId: "G-SNKQ5C0HYJ"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
-
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize Firebase services
-const db = getFirestore(app);
 const auth = getAuth(app);
-const provider = new GoogleAuthProvider(); // Google Auth Provider
+const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Export the services for use
-export { db, auth, provider, storage };
+export { auth, db, storage };

@@ -4,6 +4,13 @@ import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { collection, addDoc, query, where, onSnapshot, doc, deleteDoc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { FaCamera, FaUserCircle, FaVideo, FaImage, FaFilePdf, FaSignOutAlt, FaGoogle, FaTrash } from 'react-icons/fa';
+import './styles.css'; // Chemin vers votre fichier CSS
+
+
+
+
+
+
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);

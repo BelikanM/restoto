@@ -1,0 +1,47 @@
+.map-container {
+  position: relative;
+  height: 100vh; /* Hauteur de la carte */
+  width: 100%;   /* Largeur de la carte */
+}
+
+.map-info {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000; /* Assure que l'info est au-dessus de la carte */
+}
+
+.my-custom-pin {
+  position: relative;
+}
+
+.user-trail-marker {
+  position: relative;
+}
+
+.connected-user-marker {
+  background-color: green; /* Couleur pour le marqueur des utilisateurs connectés */
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.close-user-marker {
+  background-color: magenta; /* Couleur pour le marqueur des utilisateurs très proches */
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.map-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.5rem;
+}

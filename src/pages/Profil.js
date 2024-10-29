@@ -1,118 +1,30 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { db, auth, storage } from './api/firebaseConfig';
-import { collection, query, onSnapshot, addDoc, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import SuggestedProfiles from './api/SuggestedProfiles';
-import { FaPaperclip, FaMicrophone, FaPaperPlane } from 'react-icons/fa';
-import { usePushSubscription as subscribeToPush } from './api/push-subscription';
-import { sendPushNotification } from './api/push-api';
-import requestNotificationPermission from './api/notification-api';
-import Chapi from './api/Chapi';
 
-function EditMessageModal({ message, onSave, onCancel }) {
-  const [editedText, setEditedText] = useState(message.text);
+  
+      
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md">
-        <h3 className="text-xl font-bold mb-4">Modifier le message</h3>
-        <textarea
-          value={editedText}
-          onChange={(e) => setEditedText(e.target.value)}
-          className="w-full bg-gray-700 text-white rounded p-2 mb-4"
-          rows="4"
-        />
-        <div className="flex justify-end space-x-2">
-          <button onClick={onCancel} className="bg-gray-600 text-white rounded px-4 py-2">Annuler</button>
-          <button onClick={() => onSave(editedText)} className="bg-blue-600 text-white rounded px-4 py-2">Sauvegarder</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function AudioRecorder({ onAudioRecorded }) {
-  const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
 
-  const startRecording = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorderRef.current = new MediaRecorder(stream);
-    audioChunksRef.current = [];
+          if (hasUnreadMessages && !document.hasFocus()) {
+            try {
+              await requestNotificationPermission();
+              const subscription = await subscribeToPush();
+              await sendPushNotification(subscription, {
+                title: 'Nouveau message',
+                body: `Vous avez un nouveau message de ${user.displayName}`,
+                icon: user.profilePhotoUrl,
+              });
+            } catch (error) {
+              console.error('Error sending push notification:', error);
+            }
+          }
+        });
 
-    mediaRecorderRef.current.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunksRef.current.push(event.data);
-      }
-    };
-
-    mediaRecorderRef.current.onstop = () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-      onAudioRecorded(audioBlob);
-    };
-
-    mediaRecorderRef.current.start();
-    setIsRecording(true);
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  return (
-    <button
-      onClick={isRecording ? stopRecording : startRecording}
-      className={`bg-${isRecording ? 'red' : 'blue'}-600 text-white rounded-full p-2`}
-    >
-      <FaMicrophone />
-    </button>
-  );
-}
-
-function Chat() {
-  const [users, setUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [newMedia, setNewMedia] = useState(null);
-  const [editingMessage, setEditingMessage] = useState(null);
-  const chatEndRef = useRef(null);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      setCurrentUser(user ? user : null);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (currentUser) {
-      const q = query(collection(db, 'users'));
-      const unsubscribeUsers = onSnapshot(q, (querySnapshot) => {
-        const userList = querySnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            displayName: doc.data().displayName,
-            profilePhotoUrl: doc.data().profilePhotoUrl,
-            hasUnreadMessages: false,
-          }))
-          .filter(user => user.id !== currentUser.uid);
-
-        setUsers(userList);
+        return () => unsubscribe();
       });
-
-      return () => unsubscribeUsers();
     }
-  }, [currentUser]);
+  }, [currentUser, users]);
 
-  // Récupération des messages uniquement pour la conversation active
   useEffect(() => {
     if (currentUser && selectedUser) {
       const chatId = [currentUser.uid, selectedUser.id].sort().join('_');
@@ -205,6 +117,7 @@ function Chat() {
           </div>
         )}
         <SuggestedProfiles users={users} onSelectUser={handleUserSelect} />
+
         <Chapi currentUser={currentUser} users={users} onSelectUser={handleUserSelect} />
       </header>
 

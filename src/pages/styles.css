@@ -1,0 +1,38 @@
+body {
+  background-color: #f8f8f8; /* Couleur de fond */
+}
+
+.container {
+  color: black; /* Couleur du texte */
+  font-weight: bold; /* Texte en gras */
+}
+
+.navbar {
+  background-color: #000; /* Noir pour la barre de navigation */
+}
+
+.button {
+  font-weight: bold; /* Boutons en texte gras */
+}
+
+/* Ajoutez ceci pour les boutons */
+button {
+  font-weight: bold; /* Texte en gras pour les boutons */
+  color: white; /* Couleur du texte des boutons */
+}
+
+button.bg-blue-500 {
+  background-color: #ffcc00; /* Jaune */
+}
+
+button.bg-red-500 {
+  background-color: #ffcc00; /* Jaune */
+}
+
+button.bg-green-500 {
+  background-color: #ffcc00; /* Jaune */
+}
+
+label {
+  color: black; /* Texte noir pour les labels */
+}

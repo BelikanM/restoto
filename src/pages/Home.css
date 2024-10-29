@@ -1,0 +1,53 @@
+/* Home.css */
+
+.container {
+  background-color: #0d47a1; /* Bleu foncé pour la bannière */
+  color: #000000; /* Noir pour le texte de la bannière */
+  transition: all 0.3s ease;
+}
+
+input {
+  background-color: #1976d2; /* Bleu moyen */
+  border: 1px solid #64b5f6; /* Bordure bleu clair */
+  color: #000000; /* Noir épais pour le texte de l'input */
+}
+
+input::placeholder {
+  color: #333333; /* Noir foncé pour le placeholder */
+}
+
+.border {
+  border-color: #333333; /* Bordure noir foncé */
+}
+
+.text-blue-600 {
+  color: #000000; /* Noir pour le texte à la place du bleu */
+}
+
+.bg-blue-500 {
+  background-color: #1a73e8; /* Bleu pour garder le contraste de fond */
+}
+
+.text-red-500 {
+  color: #b71c1c; /* Rouge plus foncé pour rester lisible */
+}
+
+.text-gray-500, .text-gray-600 {
+  color: #333333; /* Noir épais */
+}
+
+.text-yellow-500 {
+  color: #fdd835; /* Jaune pour garder le contraste */
+}
+
+.bg-gray-100 {
+  background-color: #1565c0; /* Bleu foncé */
+}
+
+.text-gray-800 {
+  color: #000000; /* Noir épais */
+}
+
+.shadow-lg {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Ombre noire */
+}

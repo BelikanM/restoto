@@ -1,0 +1,7 @@
+
+/* src/EC/components/SearchBar/SearchBar.css */
+.search-bar {
+  display: flex;
+  justify-content: center;
+  margin: 20px;
+}

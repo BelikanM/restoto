@@ -1,43 +1,27 @@
-import { useState, useEffect } from 'react';
 
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
-    .replace(/_/g, '/');
+// src/api/push-subscription.js
+import { getMessaging, getToken } from 'firebase/messaging';
+import { initializeApp } from 'firebase/app';
 
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
+const firebaseConfig = {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
+};
 
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
+// Initialiser Firebase
+initializeApp(firebaseConfig);
 
-const publicVapidKey = 'BL3VX5LZkaERWTPu3R6Ky8q2_2OVlvySUXSjb-eX09G7HCG3Ieggcr0XTRgM63gzn4wDQiH_Kq_3Klmy_TV4dOw';
+export const subscribeToPush = async () => {
+  const messaging = getMessaging();
+  const token = await getToken(messaging, {
+    vapidKey: 'BL3VX5LZkaERWTPu3R6Ky8q2_2OVlvySUXSjb-eX09G7HCG3Ieggcr0XTRgM63gzn4wDQiH_Kq_3Klmy_TV4dOw',
+  });
 
-export function usePushSubscription() {
-  const [subscription, setSubscription] = useState(null);
-
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      subscribe();
-    }
-  }, []);
-
-  async function subscribe() {
-    try {
-      const registration = await navigator.serviceWorker.register('/service-worker.js');
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-      });
-      setSubscription(subscription);
-    } catch (error) {
-      console.error('Error subscribing to push notifications:', error);
-    }
-  }
-
-  return subscription;
-}
+  // Vous pouvez enregistrer le token sur votre serveur ici
+  return token;
+};

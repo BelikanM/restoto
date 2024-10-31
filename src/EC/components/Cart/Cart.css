@@ -1,0 +1,8 @@
+
+/* src/EC/components/Cart/Cart.css */
+.cart {
+  border: 1px solid #ccc;
+  padding: 20px;
+  margin: 10px;
+  text-align: center;
+}

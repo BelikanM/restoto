@@ -1,13 +1,20 @@
+
 // src/index.js
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
-import store from './store'; // Assurez-vous que le chemin est correct
 import App from './App';
+import reportWebVitals from './reportWebVitals';
 
-ReactDOM.render(
-  <Provider store={store}>
-    <App />
-  </Provider>,
-  document.getElementById('root')
-);
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    .then(() => {
+      console.log('Service Worker registered successfully');
+    })
+    .catch((error) => {
+      console.error('Service Worker registration failed:', error);
+    });
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+
+reportWebVitals();

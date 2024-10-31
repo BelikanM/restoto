@@ -1,0 +1,7 @@
+
+/* src/EC/components/ProductList/ProductList.css */
+.product-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

@@ -7,7 +7,7 @@ import {
   ShoppingCartIcon,
   UserIcon,
   LoginIcon,
-  TruckIcon,
+  ChatIcon, // Assurez-vous d'importer une icône appropriée pour le chat
   XIcon,
 } from '@heroicons/react/outline';
 
@@ -33,6 +33,7 @@ const Header = () => {
           <NavItem to="/profile" icon={<UserIcon className="w-5 h-5" />} label="Profil" />
           <NavItem to="/login" icon={<LoginIcon className="w-5 h-5" />} label="Connexion" />
           <NavItem to="/signup" icon={<UserIcon className="w-5 h-5" />} label="Inscription" />
+          <NavItem to="/chat" icon={<ChatIcon className="w-5 h-5" />} label="Chat" /> {/* Nouveau lien */}
         </nav>
 
         {/* Menu Button - Mobile */}
@@ -56,6 +57,7 @@ const Header = () => {
             <NavItem to="/profile" label="Profil" onClick={() => setIsMenuOpen(false)} />
             <NavItem to="/login" label="Connexion" onClick={() => setIsMenuOpen(false)} />
             <NavItem to="/signup" label="Inscription" onClick={() => setIsMenuOpen(false)} />
+            <NavItem to="/chat" label="Chat" onClick={() => setIsMenuOpen(false)} /> {/* Nouveau lien */}
           </nav>
         </div>
       )}

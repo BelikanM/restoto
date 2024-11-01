@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { db, auth } from './firebaseConfig';
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from './firebaseConfig';
+import { collection, getDocs } from 'firebase/firestore';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
@@ -10,39 +9,20 @@ import 'slick-carousel/slick/slick-theme.css';
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUser(user);
-      } else {
-        setCurrentUser(null);
-      }
-    });
-
-    const unsubscribeProducts = onSnapshot(collection(db, 'products'), (productSnapshot) => {
+    const fetchProducts = async () => {
+      const productCollection = collection(db, 'products');
+      const productSnapshot = await getDocs(productCollection);
       const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setProducts(productList);
-    });
-
-    return () => {
-      unsubscribeAuth();
-      unsubscribeProducts();
     };
+
+    fetchProducts();
   }, []);
 
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error('Erreur de connexion:', error);
-    }
-  };
-
   const addToCart = (product, quantity) => {
-    setCart(prevCart => [...prevCart, { ...product, quantity }]);
+    setCart([...cart, { ...product, quantity: parseInt(quantity, 10) }]);
   };
 
   const handlePurchase = () => {
@@ -61,28 +41,11 @@ const ProductList = () => {
 
   return (
     <div className="container mx-auto p-4">
-      {!currentUser ? (
-        <button
-          onClick={handleGoogleSignIn}
-          className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-        >
-          Connexion avec Google
-        </button>
-      ) : (
-        <div className="text-center mb-4">
-          <p>Bienvenue, {currentUser.displayName}</p>
-          <img src={currentUser.photoURL} alt="Profile" className="w-10 h-10 rounded-full mx-auto" />
-        </div>
-      )}
       <h1 className="text-2xl font-bold mb-4 text-center">Produits</h1>
       <Slider {...sliderSettings} className="mb-8">
         {products.map(product => (
-          <div key={product.id} className="p-4">
-            <ProductCard 
-              product={product} 
-              user={currentUser}
-              addToCart={addToCart} 
-            />
+          <div key={product.id}>
+            <ProductCard product={product} addToCart={addToCart} />
           </div>
         ))}
       </Slider>
@@ -91,28 +54,12 @@ const ProductList = () => {
   );
 };
 
-const ProductCard = ({ product, user, addToCart }) => {
+const ProductCard = ({ product, addToCart }) => {
   const [quantity, setQuantity] = useState(1);
 
   return (
     <div className="border p-4 rounded shadow-sm flex flex-col items-center">
-      {user ? (
-        <div className="flex items-center mb-2">
-          <img
-            src={user.photoURL}
-            alt="Profile"
-            className="w-10 h-10 rounded-full mr-3"
-          />
-          <p className="font-medium">{user.displayName}</p>
-        </div>
-      ) : (
-        <p className="italic text-gray-500">Chargement...</p>
-      )}
-      <img
-        src={product.imageUrl}
-        alt={product.name}
-        className="w-full h-48 object-cover mb-4"
-      />
+      <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover mb-4" />
       <h2 className="text-lg font-semibold text-center">{product.name}</h2>
       <p className="text-gray-700 text-center">{product.description}</p>
       <p className="text-gray-500">{product.price} XOF</p>
@@ -120,6 +67,7 @@ const ProductCard = ({ product, user, addToCart }) => {
         <input
           type="number"
           min="1"
+          max={product.stock}
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           className="border p-1 w-16 mr-2"

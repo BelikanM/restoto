@@ -1,188 +1,153 @@
 
 import React, { useState, useEffect } from 'react';
-import { FaUpload } from 'react-icons/fa';
-import { db, storage } from './firebase'; // Assurez-vous que le chemin est correct
-import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, auth, storage } from './firebaseConfig';
+import { collection, addDoc, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const ProductManagement = () => {
-  const [products, setProducts] = useState([]);
+const ProductForm = () => {
   const [productName, setProductName] = useState('');
-  const [price, setPrice] = useState('');
-  const [currency, setCurrency] = useState('EUR');
-  const [stock, setStock] = useState('');
   const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
   const [image, setImage] = useState(null);
+  const [error, setError] = useState('');
+  const [products, setProducts] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      const querySnapshot = await getDocs(collection(db, 'products'));
-      const productsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProducts(productsData);
+    const fetchUserProfile = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const userSnapshot = await getDocs(collection(db, 'users'));
+        const userData = userSnapshot.docs.map(doc => doc.data()).find(u => u.uid === user.uid);
+        setUserProfile(userData);
+      }
     };
 
+    const fetchProducts = async () => {
+      const productCollection = collection(db, 'products');
+      const productSnapshot = await getDocs(productCollection);
+      const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProducts(productList);
+    };
+
+    fetchUserProfile();
     fetchProducts();
   }, []);
+
+  const handleImageUpload = async (file) => {
+    const storageRef = ref(storage, `products/${file.name}`);
+    await uploadBytes(storageRef, file);
+    const imageUrl = await getDownloadURL(storageRef);
+    return imageUrl;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let imageUrl = '';
-      if (image) {
-        const imageRef = ref(storage, `products/${image.name}`);
-        await uploadBytes(imageRef, image);
-        imageUrl = await getDownloadURL(imageRef);
+      const user = auth.currentUser;
+      if (!user) {
+        setError('Vous devez être connecté pour publier un produit.');
+        return;
       }
 
-      const docRef = await addDoc(collection(db, 'products'), {
+      const imageUrl = image ? await handleImageUpload(image) : '';
+      await addDoc(collection(db, 'products'), {
         name: productName,
+        description,
         price: parseFloat(price),
-        currency: currency,
-        stock: parseInt(stock),
-        description: description,
-        category: category,
-        imageUrl: imageUrl,
+        category,
+        imageUrl,
+        userId: user.uid,
+        userName: user.displayName,
+        userProfileUrl: userProfile?.profileUrl || ''
       });
 
-      setProducts([...products, {
-        id: docRef.id,
-        name: productName,
-        price: parseFloat(price),
-        currency: currency,
-        stock: parseInt(stock),
-        description,
-        category,
-        imageUrl
-      }]);
       setProductName('');
-      setPrice('');
-      setCurrency('EUR');
-      setStock('');
       setDescription('');
+      setPrice('');
       setCategory('');
       setImage(null);
-      alert('Product added successfully');
+      setError('');
+      fetchProducts(); // Mettre à jour la liste des produits
     } catch (error) {
-      console.error('Error adding product: ', error);
+      setError('Erreur lors de la publication du produit.');
     }
   };
 
-  const handleDelete = async (productId, imageUrl) => {
-    try {
-      await deleteDoc(doc(db, 'products', productId));
-
-      if (imageUrl) {
-        const imageRef = ref(storage, imageUrl);
-        await deleteObject(imageRef);
-      }
-
-      setProducts(products.filter(product => product.id !== productId));
-    } catch (error) {
-      console.error('Error deleting product: ', error);
-    }
+  const handleDelete = async (productId) => {
+    await deleteDoc(doc(db, 'products', productId));
+    setProducts(products.filter(product => product.id !== productId));
   };
 
   return (
-    <div className="max-w-lg mx-auto p-6">
-      {/* Product Form */}
-      <div className="bg-white shadow-md rounded-md p-6 mb-8">
-        <h2 className="text-xl font-bold mb-4">Publish a Product</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Product Name"
-              className="w-full p-2 border border-gray-300 rounded-md"
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-4 flex">
-            <input
-              type="number"
-              placeholder="Price"
-              className="w-full p-2 border border-gray-300 rounded-md mr-2"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              required
-            />
-            <select
-              className="p-2 border border-gray-300 rounded-md"
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-            >
-              <option value="EUR">EUR</option>
-              <option value="USD">USD</option>
-              <option value="XOF">XOF (Franc CFA)</option>
-            </select>
-          </div>
-          <div className="mb-4">
-            <input
-              type="number"
-              placeholder="Stock"
-              className="w-full p-2 border border-gray-300 rounded-md"
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <textarea
-              placeholder="Description"
-              className="w-full p-2 border border-gray-300 rounded-md"
-              rows="4"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            ></textarea>
-          </div>
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Category"
-              className="w-full p-2 border border-gray-300 rounded-md"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
-          </div>
-          <div className="mb-4">
-            <label className="flex items-center cursor-pointer">
-              <FaUpload className="mr-2" />
-              <span>Upload Image</span>
-              <input
-                type="file"
-                className="hidden"
-                onChange={(e) => setImage(e.target.files[0])}
-                accept="image/*"
-              />
-            </label>
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
-          >
-            Submit
-          </button>
-        </form>
-      </div>
-
-      {/* Product List */}
-      <div className="bg-white shadow-md rounded-md p-6">
-        <h2 className="text-xl font-bold mb-4">Product List</h2>
+    <div className="max-w-md mx-auto p-6 bg-white shadow-md rounded">
+      <h2 className="text-xl font-bold mb-4">Publier un Produit</h2>
+      {error && <p className="text-red-500">{error}</p>}
+      {userProfile && (
+        <div className="flex items-center mb-4">
+          <img src={userProfile.profileUrl} alt="Profile" className="w-12 h-12 rounded-full mr-3" />
+          <p>{auth.currentUser.displayName}</p>
+        </div>
+      )}
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Nom du produit"
+          value={productName}
+          onChange={(e) => setProductName(e.target.value)}
+          className="w-full p-2 border rounded mb-2"
+          required
+        />
+        <textarea
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full p-2 border rounded mb-2"
+          required
+        />
+        <input
+          type="number"
+          placeholder="Prix"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          className="w-full p-2 border rounded mb-2"
+          required
+        />
+        <input
+          type="text"
+          placeholder="Catégorie"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full p-2 border rounded mb-2"
+          required
+        />
+        <input
+          type="file"
+          onChange={(e) => setImage(e.target.files[0])}
+          className="w-full p-2 border rounded mb-2"
+        />
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          Publier
+        </button>
+      </form>
+      <h3 className="text-xl font-bold mt-6 mb-4">Vos Produits</h3>
+      <div>
         {products.map(product => (
-          <div key={product.id} className="border p-4 mb-4 rounded-md shadow-md">
-            <h3 className="text-lg font-semibold">{product.name}</h3>
-            <p>Price: {product.price} {product.currency}</p>
-            <p>Stock: {product.stock}</p>
-            <p>Category: {product.category}</p>
-            <p>Description: {product.description}</p>
-            {product.imageUrl && <img src={product.imageUrl} alt={product.name} className="w-full h-auto mt-2" />}
+          <div key={product.id} className="border p-4 rounded mb-4 flex justify-between items-center">
+            <div>
+              <img src={product.imageUrl} alt={product.name} className="w-16 h-16 object-cover rounded mr-4" />
+              <h4 className="font-semibold">{product.name}</h4>
+              <p>{product.userName}</p>
+            </div>
             <button
-              onClick={() => handleDelete(product.id, product.imageUrl)}
-              className="mt-4 bg-red-500 text-white p-2 rounded-md hover:bg-red-600"
+              onClick={() => handleDelete(product.id)}
+              className="bg-red-500 text-white px-2 py-1 rounded"
             >
-              Delete
+              Supprimer
             </button>
           </div>
         ))}
@@ -191,4 +156,4 @@ const ProductManagement = () => {
   );
 };
 
-export default ProductManagement;
+export default ProductForm;

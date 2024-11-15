@@ -1,24 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
-import { db, auth } from './firebaseConfig';
+import { db, auth, storage } from './firebaseConfig';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 import { collection, onSnapshot } from 'firebase/firestore';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { FaEnvelope } from 'react-icons/fa'; // Icône Gmail
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
-  const [cart, setCart] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUser(user);
-      } else {
-        setCurrentUser(null);
-      }
+      setCurrentUser(user);
     });
 
     const unsubscribeProducts = onSnapshot(collection(db, 'products'), (productSnapshot) => {
@@ -41,14 +37,6 @@ const ProductList = () => {
     }
   };
 
-  const addToCart = (product, quantity) => {
-    setCart(prevCart => [...prevCart, { ...product, quantity }]);
-  };
-
-  const handlePurchase = () => {
-    console.log('Achat validé:', cart);
-  };
-
   const sliderSettings = {
     dots: true,
     infinite: true,
@@ -58,6 +46,10 @@ const ProductList = () => {
     autoplay: true,
     autoplaySpeed: 3000,
   };
+
+  const filteredProducts = currentUser
+    ? products.filter(product => product.ownerId !== currentUser.uid) // Montre les produits des autres utilisateurs
+    : products;
 
   return (
     <div className="container mx-auto p-4">
@@ -76,38 +68,48 @@ const ProductList = () => {
       )}
       <h1 className="text-2xl font-bold mb-4 text-center">Produits</h1>
       <Slider {...sliderSettings} className="mb-8">
-        {products.map(product => (
-          <div key={product.id} className="p-4">
-            <ProductCard 
-              product={product} 
-              user={currentUser}
-              addToCart={addToCart} 
-            />
-          </div>
-        ))}
+        {filteredProducts.length > 0 ? (
+          filteredProducts.map(product => (
+            <div key={product.id} className="p-4">
+              <ProductCard 
+                product={product} 
+                currentUser={currentUser} 
+              />
+            </div>
+          ))
+        ) : (
+          <p className="text-center">Aucun produit disponible.</p>
+        )}
       </Slider>
-      <Cart cart={cart} handlePurchase={handlePurchase} />
     </div>
   );
 };
 
-const ProductCard = ({ product, user, addToCart }) => {
-  const [quantity, setQuantity] = useState(1);
+const ProductCard = ({ product, currentUser }) => {
+  const handleEmailContact = () => {
+    const subject = `Intérêt pour votre produit: ${product.name}`;
+    const body = `
+      Bonjour ${product.ownerName || 'le vendeur'},
+
+      J'ai vu votre produit "${product.name}" et je souhaite en avoir plus de détails.
+      Merci de me contacter.
+
+      Cordialement,
+      ${currentUser ? currentUser.displayName : 'Un client'}
+    `;
+    window.open(`mailto:${product.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+  };
 
   return (
     <div className="border p-4 rounded shadow-sm flex flex-col items-center">
-      {user ? (
-        <div className="flex items-center mb-2">
-          <img
-            src={user.photoURL}
-            alt="Profile"
-            className="w-10 h-10 rounded-full mr-3"
-          />
-          <p className="font-medium">{user.displayName}</p>
-        </div>
-      ) : (
-        <p className="italic text-gray-500">Chargement...</p>
-      )}
+      <div className="flex items-center mb-2">
+        <img
+          src={product.ownerPhotoUrl} // Assurez-vous que vous avez le champ `ownerPhotoUrl` dans votre produit
+          alt="Profile"
+          className="w-10 h-10 rounded-full mr-3"
+        />
+        <p className="font-medium">{product.ownerName}</p> {/* Assurez-vous d'avoir `ownerName` dans votre produit */}
+      </div>
       <img
         src={product.imageUrl}
         alt={product.name}
@@ -116,46 +118,17 @@ const ProductCard = ({ product, user, addToCart }) => {
       <h2 className="text-lg font-semibold text-center">{product.name}</h2>
       <p className="text-gray-700 text-center">{product.description}</p>
       <p className="text-gray-500">{product.price} XOF</p>
-      <div className="flex items-center mt-2">
-        <input
-          type="number"
-          min="1"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          className="border p-1 w-16 mr-2"
-        />
+      {/* Afficher le bouton uniquement si l'utilisateur courant n'est pas le propriétaire du produit */}
+      {currentUser && currentUser.uid !== product.ownerId && (
         <button
-          className="bg-green-500 text-white px-4 py-2 rounded"
-          onClick={() => addToCart(product, quantity)}
+          className="bg-red-500 text-white px-4 py-2 rounded mt-2 flex items-center"
+          onClick={handleEmailContact}
         >
-          Ajouter
+          <FaEnvelope className="mr-2" /> Contacter par Gmail
         </button>
-      </div>
+      )}
     </div>
   );
 };
-
-const Cart = ({ cart, handlePurchase }) => (
-  <div className="mt-8">
-    <h2 className="text-xl font-bold mb-4 text-center">Panier</h2>
-    <div className="flex overflow-x-auto space-x-4 p-4">
-      {cart.map((item, index) => (
-        <div key={index} className="border p-4 rounded shadow-sm min-w-max flex-shrink-0">
-          <h3 className="font-semibold">{item.name}</h3>
-          <p>Quantité: {item.quantity}</p>
-          <p>Total: {item.price * item.quantity} XOF</p>
-        </div>
-      ))}
-    </div>
-    <div className="text-center">
-      <button
-        className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-        onClick={handlePurchase}
-      >
-        Valider l'achat
-      </button>
-    </div>
-  </div>
-);
 
 export default ProductList;

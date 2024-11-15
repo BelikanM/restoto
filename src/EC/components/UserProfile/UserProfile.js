@@ -1,159 +1,223 @@
 
 import React, { useState, useEffect } from 'react';
-import { db, auth, storage } from './firebaseConfig';
-import { collection, addDoc, getDocs, doc, deleteDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db, storage } from './firebaseConfig';
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
+import { collection, addDoc, query, where, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { FaGoogle, FaEnvelope, FaWhatsapp } from 'react-icons/fa';
 
-const ProductForm = () => {
-  const [productName, setProductName] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('');
-  const [image, setImage] = useState(null);
-  const [error, setError] = useState('');
+const UserProfile = () => {
+  const [user, setUser] = useState(null);
   const [products, setProducts] = useState([]);
-  const [userProfile, setUserProfile] = useState(null);
+  const [productName, setProductName] = useState('');
+  const [productImage, setProductImage] = useState(null);
+  const [productDescription, setProductDescription] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [productPrice, setProductPrice] = useState('');
+  const [productStock, setProductStock] = useState('');
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const userSnapshot = await getDocs(collection(db, 'users'));
-        const userData = userSnapshot.docs.map(doc => doc.data()).find(u => u.uid === user.uid);
-        setUserProfile(userData);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        fetchProducts(currentUser.uid);
       }
-    };
-
-    const fetchProducts = async () => {
-      const productCollection = collection(db, 'products');
-      const productSnapshot = await getDocs(productCollection);
-      const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProducts(productList);
-    };
-
-    fetchUserProfile();
-    fetchProducts();
+    });
+    return () => unsubscribe();
   }, []);
 
-  const handleImageUpload = async (file) => {
-    const storageRef = ref(storage, `products/${file.name}`);
-    await uploadBytes(storageRef, file);
-    const imageUrl = await getDownloadURL(storageRef);
-    return imageUrl;
+  const fetchProducts = async (userId) => {
+    const q = query(collection(db, "file"), where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+    const productsData = [];
+    querySnapshot.forEach((doc) => {
+      productsData.push({ id: doc.id, ...doc.data() });
+    });
+    setProducts(productsData);
+  };
+
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Error signing in with Google", error);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files[0]) {
+      setProductImage(e.target.files[0]);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        setError('Vous devez être connecté pour publier un produit.');
-        return;
-      }
+    if (!productName || !productImage || !phoneNumber || !email || !productPrice || !productStock) return;
 
-      const imageUrl = image ? await handleImageUpload(image) : '';
-      await addDoc(collection(db, 'products'), {
-        name: productName,
-        description,
-        price: parseFloat(price),
-        category,
-        imageUrl,
-        userId: user.uid,
-        userName: user.displayName,
-        userProfileUrl: userProfile?.profileUrl || ''
-      });
+    const storageRef = ref(storage, `products/${productImage.name}`);
+    await uploadBytes(storageRef, productImage);
+    const imageUrl = await getDownloadURL(storageRef);
 
-      setProductName('');
-      setDescription('');
-      setPrice('');
-      setCategory('');
-      setImage(null);
-      setError('');
-      fetchProducts(); // Mettre à jour la liste des produits
-    } catch (error) {
-      setError('Erreur lors de la publication du produit.');
-    }
+    await addDoc(collection(db, 'file'), {
+      userId: user.uid,
+      name: productName,
+      description: productDescription,
+      imageUrl,
+      phoneNumber,
+      email,
+      price: productPrice,
+      stock: productStock,
+    });
+
+    setProductName('');
+    setProductDescription('');
+    setProductImage(null);
+    setPhoneNumber('');
+    setEmail('');
+    setProductPrice('');
+    setProductStock('');
+    fetchProducts(user.uid);
   };
 
   const handleDelete = async (productId) => {
-    await deleteDoc(doc(db, 'products', productId));
-    setProducts(products.filter(product => product.id !== productId));
+    await deleteDoc(doc(db, "file", productId));
+    fetchProducts(user.uid);
+  };
+
+  const handleUpdate = async (productId) => {
+    const newName = prompt("Enter new product name");
+    const newDescription = prompt("Enter new product description");
+    const newPhoneNumber = prompt("Enter new phone number");
+    const newEmail = prompt("Enter new email");
+    const newPrice = prompt("Enter new product price");
+    const newStock = prompt("Enter new product stock");
+    if (newName && newDescription && newPhoneNumber && newEmail && newPrice && newStock) {
+      await updateDoc(doc(db, "file", productId), {
+        name: newName,
+        description: newDescription,
+        phoneNumber: newPhoneNumber,
+        email: newEmail,
+        price: newPrice,
+        stock: newStock,
+      });
+      fetchProducts(user.uid);
+    }
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow-md rounded">
-      <h2 className="text-xl font-bold mb-4">Publier un Produit</h2>
-      {error && <p className="text-red-500">{error}</p>}
-      {userProfile && (
-        <div className="flex items-center mb-4">
-          <img src={userProfile.profileUrl} alt="Profile" className="w-12 h-12 rounded-full mr-3" />
-          <p>{auth.currentUser.displayName}</p>
+    <div className="p-4">
+      {!user ? (
+        <button
+          onClick={handleGoogleSignIn}
+          className="bg-blue-500 text-white p-2 rounded flex items-center"
+        >
+          <FaGoogle className="mr-2" /> Sign in with Google
+        </button>
+      ) : (
+        <div>
+          <div className="flex items-center mb-4">
+            <img src={user.photoURL} alt={user.displayName} className="w-12 h-12 rounded-full mr-4" />
+            <span className="text-lg font-semibold">{user.displayName}</span>
+          </div>
+          <form onSubmit={handleSubmit} className="bg-white p-4 shadow-md rounded mb-6 space-y-4">
+            <input
+              type="text"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              placeholder="Product Name"
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+            <input
+              type="file"
+              onChange={handleFileChange}
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+            <textarea
+              value={productDescription}
+              onChange={(e) => setProductDescription(e.target.value)}
+              placeholder="Product Description"
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="Phone Number"
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+            <input
+              type="number"
+              value={productPrice}
+              onChange={(e) => setProductPrice(e.target.value)}
+              placeholder="Price"
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+            <input
+              type="number"
+              value={productStock}
+              onChange={(e) => setProductStock(e.target.value)}
+              placeholder="Stock"
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+            <button type="submit" className="w-full bg-green-500 text-white p-2 rounded">
+              Publish
+            </button>
+          </form>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {products.map((product) => (
+              <div key={product.id} className="bg-white p-4 shadow-md rounded">
+                <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover mb-4 rounded" />
+                <h3 className="text-xl font-semibold">{product.name}</h3>
+                <p className="text-gray-600">{product.description}</p>
+                <p className="text-lg font-bold mt-2">Price: ${product.price}</p>
+                <p className="text-gray-600">Stock: {product.stock}</p>
+                <div className="flex space-x-2 mt-4">
+                  <a
+                    href={`mailto:${product.email}?subject=Inquiry about ${product.name}&body=I am interested in the product: ${product.name}%0ADescription: ${product.description}%0AImage: ${product.imageUrl}%0APrice: ${product.price}%0AStock: ${product.stock}`}
+                    className="flex items-center justify-center w-full bg-blue-500 text-white p-2 rounded"
+                  >
+                    <FaEnvelope className="mr-2" /> Email Seller
+                  </a>
+                  <a
+                    href={`https://wa.me/${product.phoneNumber}?text=I am interested in your product: ${product.name}%0ADescription: ${product.description}%0AImage: ${product.imageUrl}%0APrice: ${product.price}%0AStock: ${product.stock}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center w-full bg-green-500 text-white p-2 rounded"
+                  >
+                    <FaWhatsapp className="mr-2" /> WhatsApp
+                  </a>
+                </div>
+                <div className="flex mt-4 space-x-2">
+                  <button onClick={() => handleUpdate(product.id)} className="flex-1 bg-yellow-500 text-white p-2 rounded">
+                    Modify
+                  </button>
+                  <button onClick={() => handleDelete(product.id)} className="flex-1 bg-red-500 text-white p-2 rounded">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Nom du produit"
-          value={productName}
-          onChange={(e) => setProductName(e.target.value)}
-          className="w-full p-2 border rounded mb-2"
-          required
-        />
-        <textarea
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full p-2 border rounded mb-2"
-          required
-        />
-        <input
-          type="number"
-          placeholder="Prix"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="w-full p-2 border rounded mb-2"
-          required
-        />
-        <input
-          type="text"
-          placeholder="Catégorie"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="w-full p-2 border rounded mb-2"
-          required
-        />
-        <input
-          type="file"
-          onChange={(e) => setImage(e.target.files[0])}
-          className="w-full p-2 border rounded mb-2"
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Publier
-        </button>
-      </form>
-      <h3 className="text-xl font-bold mt-6 mb-4">Vos Produits</h3>
-      <div>
-        {products.map(product => (
-          <div key={product.id} className="border p-4 rounded mb-4 flex justify-between items-center">
-            <div>
-              <img src={product.imageUrl} alt={product.name} className="w-16 h-16 object-cover rounded mr-4" />
-              <h4 className="font-semibold">{product.name}</h4>
-              <p>{product.userName}</p>
-            </div>
-            <button
-              onClick={() => handleDelete(product.id)}
-              className="bg-red-500 text-white px-2 py-1 rounded"
-            >
-              Supprimer
-            </button>
-          </div>
-        ))}
-      </div>
     </div>
   );
 };
 
-export default ProductForm;
+export default UserProfile;

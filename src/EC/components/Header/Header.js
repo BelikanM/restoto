@@ -1,78 +1,131 @@
 
-// src/EC/components/Header/Header.js
-import React from 'react';
-import { Link } from 'react-router-dom';
-import useSearch from '../../hooks/useSearch';
-import './Header.css';  // Assurez-vous d'ajouter des styles si nécessaire
+import React, { useState, useEffect } from 'react';
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
+import { FaPaperPlane } from 'react-icons/fa';
+import PrivateChat from './PrivateChat'; // Import du composant PrivateChat
 
-const Header = () => {
-  const pages = ["Produits", "Panier", "Checkout", "Historique des commandes"]; // Liste des pages
-  const { query, setQuery, results } = useSearch(pages);
+const firebaseConfig = {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+const GroupeChat = () => {
+  const [messages, setMessages] = useState([]);
+  const [nouveauMessage, setNouveauMessage] = useState('');
+  const [user, setUser] = useState(null);
+  const [privateChatUser, setPrivateChatUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    const unsubscribeMessages = onSnapshot(collection(db, "conversations"), (snapshot) => {
+      const messagesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMessages(messagesData);
+    });
+
+    return () => {
+      unsubscribeAuth();
+      unsubscribeMessages();
+    };
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Erreur lors de l'authentification :", error);
+    }
+  };
+
+  const envoyerMessage = async () => {
+    if (nouveauMessage.trim() === '' || !user) return;
+
+    await addDoc(collection(db, "conversations"), {
+      text: nouveauMessage,
+      userId: user.uid,
+      displayName: user.displayName,
+      profilePhotoUrl: user.photoURL,
+      timestamp: serverTimestamp(),
+    });
+
+    setNouveauMessage('');
+  };
+
+  const suivreUtilisateur = (message) => {
+    setPrivateChatUser(message.userId);
+  };
 
   return (
-    <header className="bg-blue-600 text-white p-4">
-      <div className="container mx-auto flex justify-between items-center flex-wrap">
-        {/* Logo */}
-        <div className="flex items-center">
-          <Link to="/" className="text-xl font-bold">
-            Moutouki
-          </Link>
-        </div>
+    <div className="p-4 max-w-lg mx-auto">
+      {!user ? (
+        <button onClick={handleGoogleSignIn} className="p-2 bg-blue-500 text-white rounded">
+          Se connecter avec Google
+        </button>
+      ) : (
+        <>
+          <div className="bg-gray-800 text-white p-4 rounded-lg shadow-md mb-4">
+            <h2 className="text-2xl font-bold">Groupe de Chat</h2>
+            <p className="text-red-300">Avertissement : Tous les contenus doivent être liés aux commerces sinon vous êtes banni de la plateforme.</p>
+          </div>
+          
+          <div className="bg-gray-100 p-4 rounded-lg shadow-md mb-4 overflow-y-auto" style={{ maxHeight: '60vh' }}>
+            {messages.map((message) => (
+              <div key={message.id} className="mb-2 flex items-center">
+                <img src={message.profilePhotoUrl || 'default-profile.png'} alt="Profil" className="w-10 h-10 rounded-full mr-2" />
+                <div className="bg-white p-3 rounded-lg shadow-sm w-full">
+                  <p className="font-bold">{message.displayName || 'Utilisateur inconnu'}</p>
+                  <p>{message.text}</p>
+                  {message.userId !== user.uid && (
+                    <button onClick={() => suivreUtilisateur(message)} className="text-green-500">
+                      Appeler en privé
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
 
-        {/* Barre de recherche */}
-        <div className="relative flex flex-grow mx-4 mt-2">
-          <input 
-            type="text" 
-            placeholder="Rechercher des produits ou pages..." 
-            className="flex-grow p-2 rounded-l-lg focus:outline-none" 
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <button className="bg-blue-500 p-2 rounded-r-lg text-white hover:bg-blue-700">
-            🔍
-          </button>
-          {results.length > 0 && (
-            <div className="absolute z-10 bg-white text-black mt-1 rounded shadow-lg">
-              {results.map((result, index) => (
-                <Link 
-                  key={index} 
-                  to={`/${result.toLowerCase().replace(/\s+/g, '-')}`} 
-                  className="block px-4 py-2 hover:bg-blue-100"
-                  onClick={() => setQuery('')} // Réinitialiser la recherche après un clic
-                >
-                  {result}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+          <div className="flex items-center space-x-2 mb-4">
+            <input
+              type="text"
+              placeholder="Tapez votre message..."
+              value={nouveauMessage}
+              onChange={(e) => setNouveauMessage(e.target.value)}
+              className="flex-grow p-2 border rounded"
+            />
+            <button
+              onClick={envoyerMessage}
+              className="p-2 bg-blue-500 text-white rounded flex items-center"
+            >
+              <FaPaperPlane />
+            </button>
+          </div>
+        </>
+      )}
 
-        {/* Navigation principale */}
-        <nav className="w-full md:w-auto mt-2">
-          <ul className="flex flex-col md:flex-row md:space-x-6">
-            <li>
-              <Link to="/products" className="hover:text-blue-300">Produits</Link>
-            </li>
-            <li>
-              <Link to="/cart" className="hover:text-blue-300">Panier</Link>
-            </li>
-            <li>
-              <Link to="/checkout" className="hover:text-blue-300">Checkout</Link>
-            </li>
-            <li>
-              <Link to="/orders" className="hover:text-blue-300">Historique des commandes</Link>
-            </li>
-          </ul>
-        </nav>
-
-        {/* Icônes utilisateur */}
-        <div className="flex items-center space-x-4 mt-2">
-          <Link to="/wishlist" className="hover:text-blue-300" title="Wishlist">❤️</Link>
-          <Link to="/cart" className="hover:text-blue-300" title="Panier">🛒</Link>
-        </div>
-      </div>
-    </header>
+      {privateChatUser && (
+        <PrivateChat
+          currentUser={user}
+          otherUserId={privateChatUser}
+          onClose={() => setPrivateChatUser(null)}
+        />
+      )}
+    </div>
   );
 };
 
-export default Header;
+export default GroupeChat;

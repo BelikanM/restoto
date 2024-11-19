@@ -1,4 +1,4 @@
-// components/Header.js
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -7,7 +7,7 @@ import {
   ShoppingCartIcon,
   UserIcon,
   LoginIcon,
-  ChatIcon, // Assurez-vous d'importer une icône appropriée pour le chat
+  ChatIcon,
   XIcon,
 } from '@heroicons/react/outline';
 
@@ -25,18 +25,17 @@ const Header = () => {
           </Link>
         </div>
 
-        {/* Navigation Links - Desktop */}
+        {/* Navigation Links • Desktop */}
         <nav className="hidden lg:flex space-x-6 text-lg">
           <NavItem to="/" icon={<HomeIcon className="w-5 h-5" />} label="Accueil" />
           <NavItem to="/menu" icon={<MenuIcon className="w-5 h-5" />} label="Menu" />
           <NavItem to="/cart" icon={<ShoppingCartIcon className="w-5 h-5" />} label="Panier" />
-          <NavItem to="/profile" icon={<UserIcon className="w-5 h-5" />} label="Profil" />
           <NavItem to="/login" icon={<LoginIcon className="w-5 h-5" />} label="Connexion" />
           <NavItem to="/signup" icon={<UserIcon className="w-5 h-5" />} label="Inscription" />
-          <NavItem to="/chat" icon={<ChatIcon className="w-5 h-5" />} label="Chat" /> {/* Nouveau lien */}
+          <NavItem to="/chat" icon={<ChatIcon className="w-5 h-5" />} label="Chat" />
         </nav>
 
-        {/* Menu Button - Mobile */}
+        {/* Menu Button • Mobile */}
         <div className="lg:hidden">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -53,11 +52,10 @@ const Header = () => {
           <nav className="space-y-4">
             <NavItem to="/" label="Accueil" onClick={() => setIsMenuOpen(false)} />
             <NavItem to="/menu" label="Menu" onClick={() => setIsMenuOpen(false)} />
-            <NavItem to="/cart" label="Panier" onClick={() => setIsMenuOpen(false)} />
-            <NavItem to="/profile" label="Profil" onClick={() => setIsMenuOpen(false)} />
-            <NavItem to="/login" label="Connexion" onClick={() => setIsMenuOpen(false)} />
+            <NavItem to="/cart" label="groupe" onClick={() => setIsMenuOpen(false)} />
+            <NavItem to="/login" label="GPS" onClick={() => setIsMenuOpen(false)} />
             <NavItem to="/signup" label="Inscription" onClick={() => setIsMenuOpen(false)} />
-            <NavItem to="/chat" label="Chat" onClick={() => setIsMenuOpen(false)} /> {/* Nouveau lien */}
+            <NavItem to="/chat" label="Moutouki" onClick={() => setIsMenuOpen(false)} />
           </nav>
         </div>
       )}

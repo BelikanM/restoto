@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, storage } from './firebaseConfig';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, query, where, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { FaGoogle, FaEnvelope, FaWhatsapp } from 'react-icons/fa';
 
@@ -16,6 +16,7 @@ const UserProfile = () => {
   const [email, setEmail] = useState('');
   const [productPrice, setProductPrice] = useState('');
   const [productStock, setProductStock] = useState('');
+  const [currency, setCurrency] = useState('USD');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -27,14 +28,16 @@ const UserProfile = () => {
     return () => unsubscribe();
   }, []);
 
-  const fetchProducts = async (userId) => {
+  const fetchProducts = (userId) => {
     const q = query(collection(db, "file"), where("userId", "==", userId));
-    const querySnapshot = await getDocs(q);
-    const productsData = [];
-    querySnapshot.forEach((doc) => {
-      productsData.push({ id: doc.id, ...doc.data() });
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const productsData = [];
+      querySnapshot.forEach((doc) => {
+        productsData.push({ id: doc.id, ...doc.data() });
+      });
+      setProducts(productsData);
     });
-    setProducts(productsData);
+    return unsubscribe;
   };
 
   const handleGoogleSignIn = async () => {
@@ -67,7 +70,7 @@ const UserProfile = () => {
       imageUrl,
       phoneNumber,
       email,
-      price: productPrice,
+      price: `${productPrice} ${currency}`,
       stock: productStock,
     });
 
@@ -78,12 +81,16 @@ const UserProfile = () => {
     setEmail('');
     setProductPrice('');
     setProductStock('');
-    fetchProducts(user.uid);
   };
 
   const handleDelete = async (productId) => {
-    await deleteDoc(doc(db, "file", productId));
-    fetchProducts(user.uid);
+    if (confirm("Are you sure you want to delete this product?")) {
+      try {
+        await deleteDoc(doc(db, "file", productId));
+      } catch (error) {
+        console.error("Error deleting product: ", error);
+      }
+    }
   };
 
   const handleUpdate = async (productId) => {
@@ -99,10 +106,9 @@ const UserProfile = () => {
         description: newDescription,
         phoneNumber: newPhoneNumber,
         email: newEmail,
-        price: newPrice,
+        price: `${newPrice} ${currency}`,
         stock: newStock,
       });
-      fetchProducts(user.uid);
     }
   };
 
@@ -166,6 +172,18 @@ const UserProfile = () => {
               required
               className="w-full p-2 border border-gray-300 rounded"
             />
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded"
+            >
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="JPY">JPY</option>
+              <option value="GBP">GBP</option>
+              <option value="CHF">CHF</option>
+              <option value="XOF">Franc CFA</option>
+            </select>
             <input
               type="number"
               value={productStock}
@@ -185,7 +203,7 @@ const UserProfile = () => {
                 <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover mb-4 rounded" />
                 <h3 className="text-xl font-semibold">{product.name}</h3>
                 <p className="text-gray-600">{product.description}</p>
-                <p className="text-lg font-bold mt-2">Price: ${product.price}</p>
+                <p className="text-lg font-bold mt-2">Price: {product.price}</p>
                 <p className="text-gray-600">Stock: {product.stock}</p>
                 <div className="flex space-x-2 mt-4">
                   <a

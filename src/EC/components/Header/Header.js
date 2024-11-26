@@ -29,7 +29,13 @@ const GroupeChat = () => {
   const [user, setUser] = useState(null);
   const [privateChatUser, setPrivateChatUser] = useState(null);
   const [file, setFile] = useState(null); // Pour gérer les fichiers à envoyer
+  const [audioBlob, setAudioBlob] = useState(null); // Pour gérer les blobs audio
   const [showMenu, setShowMenu] = useState(false); // État pour le menu hamburger
+  const [mediaRecorder, setMediaRecorder] = useState(null); // Pour gérer l'enregistrement audio
+  const [isRecording, setIsRecording] = useState(false); // État d'enregistrement
+  const [users, setUsers] = useState([]); // Pour stocker les utilisateurs
+  const [filteredUsers, setFilteredUsers] = useState([]); // Pour stocker les utilisateurs filtrés
+  const [mentioning, setMentioning] = useState(false); // État pour vérifier si l'utilisateur est en train de mentionner
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -41,9 +47,16 @@ const GroupeChat = () => {
       setMessages(messagesData);
     });
 
+    // Récupération des utilisateurs pour la mention
+    const unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+      const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setUsers(usersData);
+    });
+
     return () => {
       unsubscribeAuth();
       unsubscribeMessages();
+      unsubscribeUsers();
     };
   }, []);
 
@@ -80,7 +93,6 @@ const GroupeChat = () => {
     await uploadBytes(storageRef, file);
     const fileURL = await getDownloadURL(storageRef);
 
-    // Envoyer le message avec le lien du fichier
     await addDoc(collection(db, "conversations"), {
       text: `Fichier envoyé : ${file.name}`,
       fileURL,
@@ -105,6 +117,81 @@ const GroupeChat = () => {
     setShowMenu(!showMenu);
   };
 
+  const startRecording = async () => {
+    setIsRecording(true);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+    setMediaRecorder(recorder);
+
+    recorder.ondataavailable = (event) => {
+      setAudioBlob(event.data);
+    };
+
+    recorder.start();
+  };
+
+  const stopRecording = () => {
+    mediaRecorder.stop();
+    setIsRecording(false);
+  };
+
+  const envoyerAudio = async () => {
+    if (!audioBlob || !user) return;
+
+    const audioFile = new File([audioBlob], 'message.wav', { type: 'audio/wav' });
+    const storageRef = ref(storage, `audio/${audioFile.name}`);
+    await uploadBytes(storageRef, audioFile);
+    const audioURL = await getDownloadURL(storageRef);
+
+    await addDoc(collection(db, "conversations"), {
+      audioURL,
+      userId: user.uid,
+      displayName: user.displayName,
+      profilePhotoUrl: user.photoURL,
+      timestamp: serverTimestamp(),
+    });
+
+    setAudioBlob(null); // Réinitialiser le blob audio après l'envoi
+  };
+
+  const handleMessageChange = (e) => {
+    const value = e.target.value;
+    setNouveauMessage(value);
+
+    // Vérifier si l'utilisateur tape '@'
+    if (value.endsWith('@')) {
+      setMentioning(true);
+      setFilteredUsers(users); // Afficher tous les utilisateurs
+    } else if (mentioning) {
+      // Filtrer les utilisateurs selon l'entrée
+      const searchTerm = value.split('@').pop().toLowerCase();
+      const filtered = users.filter(user => user.displayName.toLowerCase().startsWith(searchTerm));
+      setFilteredUsers(filtered);
+    }
+  };
+
+  const selectUser = (user) => {
+    // Ajouter la mention dans le message
+    const updatedMessage = `${nouveauMessage.split('@')[0]}@${user.displayName} `;
+    setNouveauMessage(updatedMessage);
+    setFilteredUsers([]); // Effacer les utilisateurs filtrés
+    setMentioning(false); // Arrêter la mention
+  };
+
+  const renderMessageText = (text) => {
+    if (!text) return null; // Vérifiez si le texte est défini
+
+    const parts = text.split(/(@\w+)/g); // Séparer le texte par les mentions
+    return parts.map((part, index) => {
+      if (part.startsWith('@')) {
+        return (
+          <span key={index} className="text-blue-500 font-bold">{part}</span> // Mettre en couleur les mentions
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
     <div className="p-4 max-w-lg mx-auto">
       {!user ? (
@@ -127,7 +214,13 @@ const GroupeChat = () => {
                 <img src={message.profilePhotoUrl || 'default-profile.png'} alt="Profil" className="w-10 h-10 rounded-full mr-2" />
                 <div className="bg-white p-3 rounded-lg shadow-sm w-full">
                   <p className="font-bold">{message.displayName || 'Utilisateur inconnu'}</p>
-                  <p>{message.text}</p>
+                  <p>{renderMessageText(message.text)}</p> {/* Appel de la fonction pour rendre le texte */}
+                  {message.audioURL && (
+                    <audio controls>
+                      <source src={message.audioURL} type="audio/wav" />
+                      Votre navigateur ne supporte pas l'audio.
+                    </audio>
+                  )}
                   {message.fileURL && (
                     <a href={message.fileURL} target="_blank" rel="noopener noreferrer" className="text-blue-500">
                       Voir le fichier
@@ -153,9 +246,25 @@ const GroupeChat = () => {
               type="text"
               placeholder="Tapez votre message..."
               value={nouveauMessage}
-              onChange={(e) => setNouveauMessage(e.target.value)}
+              onChange={handleMessageChange}
               className="flex-grow p-2 border rounded"
             />
+            {mentioning && filteredUsers.length > 0 && (
+              <div className="absolute bg-white border border-gray-300 rounded mt-1 z-10">
+                {filteredUsers.map(user => (
+                  <div 
+                    key={user.id} 
+                    onClick={() => selectUser(user)} 
+                    className="p-2 hover:bg-gray-200 cursor-pointer"
+                  >
+                    {user.displayName}
+                  </div>
+                ))}
+              </div>
+            )}
+            <button onClick={envoyerMessage} className="p-2 bg-blue-500 text-white rounded flex items-center">
+              <FaPaperPlane />
+            </button>
           </div>
 
           {showMenu && (
@@ -172,17 +281,24 @@ const GroupeChat = () => {
               >
                 <FaImage /> Envoyer Fichier
               </button>
+              <div className="flex items-center">
+                <button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className="p-2 bg-yellow-500 text-white rounded flex items-center"
+                >
+                  <FaMicrophone /> {isRecording ? 'Arrêter l\'enregistrement' : 'Enregistrer un message'}
+                </button>
+                {audioBlob && (
+                  <button
+                    onClick={envoyerAudio}
+                    className="p-2 bg-blue-500 text-white rounded flex items-center ml-2"
+                  >
+                    Envoyer Audio
+                  </button>
+                )}
+              </div>
             </div>
           )}
-          
-          <div className="flex items-center space-x-2 mb-4">
-            <button
-              onClick={envoyerMessage}
-              className="p-2 bg-blue-500 text-white rounded flex items-center"
-            >
-              <FaPaperPlane />
-            </button>
-          </div>
         </>
       )}
 

@@ -1,7 +1,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { db } from './firebaseConfig';
-import { collection, getDocs } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
+
+const currencyOptions = [
+  { symbol: '$', code: 'USD' },
+  { symbol: '€', code: 'EUR' },
+  { symbol: '£', code: 'GBP' },
+  { symbol: 'CFA', code: 'XOF' } // Franc CFA
+];
 
 const ScrollingBanner = () => {
   const [products, setProducts] = useState([]);
@@ -9,13 +16,18 @@ const ScrollingBanner = () => {
   const [displayText, setDisplayText] = useState('');
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      const querySnapshot = await getDocs(collection(db, "file"));
-      const productsData = [];
-      querySnapshot.forEach((doc) => {
-        productsData.push({ id: doc.id, ...doc.data() });
+    const fetchProducts = () => {
+      const q = collection(db, "file");
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const productsData = [];
+        querySnapshot.forEach((doc) => {
+          productsData.push({ id: doc.id, ...doc.data() });
+        });
+        setProducts(productsData);
+        setCurrentIndex(0); // Reset index to show the first product when products change
       });
-      setProducts(productsData);
+
+      return () => unsubscribe(); // Clean up the subscription on unmount
     };
 
     fetchProducts();
@@ -35,7 +47,8 @@ const ScrollingBanner = () => {
     if (products.length > 0) {
       const currentProduct = products[currentIndex];
       const description = truncateDescription(currentProduct.description);
-      setDisplayText(`${currentProduct.name}: ${description} • Price: $${currentProduct.price}`);
+      const currencySymbol = currencyOptions.find(c => c.code === currentProduct.currency)?.symbol || '$'; // Default to USD if not found
+      setDisplayText(`${currentProduct.name}: ${description} • Price: ${currencySymbol}${currentProduct.price}`);
     }
   }, [currentIndex, products]);
 

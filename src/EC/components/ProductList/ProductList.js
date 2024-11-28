@@ -98,13 +98,13 @@ const ProductList = ({ addToCart }) => {
               <p className="text-gray-600">Phone: {product.phoneNumber}</p>
               <div className="flex space-x-2 mt-4">
                 <a
-                  href={`mailto:${product.email}?subject=Inquiry about ${encodeURIComponent(product.name)}&body=I'm interested in your product:%0A%0AName: ${encodeURIComponent(product.name)}%0ADescription: ${encodeURIComponent(product.description)}%0APrice: ${currency} ${priceValue}%0AImage: ${product.imageUrl}`}
+                  href={`mailto:${product.email}?subject=Inquiry about ${encodeURIComponent(product.name)}&body=I'm interested in your product:%0A%0AName: ${encodeURIComponent(product.name)}%0ADescription: ${encodeURIComponent(product.description)}%0APrice: ${currency} ${priceValue}%0AImage: ${encodeURIComponent(product.imageUrl)}`}
                   className="flex items-center justify-center w-full bg-blue-500 text-white p-2 rounded"
                 >
                   <FaEnvelope className="mr-2" /> Email Seller
                 </a>
                 <a
-                  href={`https://wa.me/${product.phoneNumber}?text=I am interested in your product:%0A%0AName: ${encodeURIComponent(product.name)}%0ADescription: ${encodeURIComponent(product.description)}%0APrice: ${currency} ${priceValue}%0AImage: ${product.imageUrl}`}
+                  href={`https://wa.me/${product.phoneNumber}?text=I am interested in your product:%0A%0AName: ${encodeURIComponent(product.name)}%0ADescription: ${encodeURIComponent(product.description)}%0APrice: ${currency} ${priceValue}%0AImage: ${encodeURIComponent(product.imageUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center w-full bg-green-500 text-white p-2 rounded"

@@ -1,0 +1,33 @@
+
+.product-scroller {
+  padding: 20px;
+}
+
+.scroll-container {
+  display: flex;
+  overflow-x: auto; /* Permet le défilement horizontal */
+  padding: 10px 0;
+  scroll-behavior: smooth; /* Ajoute un effet de défilement fluide */
+}
+
+.product-card {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  margin-right: 16px; /* Espacement entre les cartes */
+  text-align: center;
+  flex: 0 0 auto; /* Empêche le rétrécissement des cartes */
+  width: 200px; /* Largeur fixe pour les cartes */
+}
+
+.product-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Effet sur hover */
+}
+
+.favoris {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}

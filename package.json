@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@coinbase/wallet-sdk": "^4.2.3",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@fortawesome/fontawesome-svg-core": "^6.6.0",
@@ -15,6 +16,9 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.7.7",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
+    "ethers": "^6.13.4",
     "firebase": "^11.0.1",
     "googleapis": "^144.0.0",
     "jspdf": "^2.5.2",
@@ -31,6 +35,8 @@
     "react-slick": "^0.30.2",
     "redux": "^5.0.1",
     "slick-carousel": "^1.8.1",
+    "stream-browserify": "^3.0.0",
+    "tronweb": "^6.0.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

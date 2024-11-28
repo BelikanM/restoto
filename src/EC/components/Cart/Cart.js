@@ -60,12 +60,15 @@ const ProductManager = () => {
     setRecommendedProducts(suggested); // Afficher tous les produits similaires
   };
 
-  const handleEmail = (email, productName) => {
-    window.location.href = `mailto:${email}?subject=Intérêt pour ${encodeURIComponent(productName)}&body=Je suis intéressé par votre produit ${productName}.`;
+  const handleEmail = (email, productName, imageUrl) => {
+    const subject = `Intérêt pour ${encodeURIComponent(productName)}`;
+    const body = `Je suis intéressé par votre produit ${productName}. Voici l'image: ${imageUrl}`;
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
-  const handleWhatsApp = (phoneNumber, productName) => {
-    window.location.href = `https://wa.me/${phoneNumber}?text=Je suis intéressé par votre produit ${encodeURIComponent(productName)}.`;
+  const handleWhatsApp = (phoneNumber, productName, imageUrl) => {
+    const message = `Je suis intéressé par votre produit ${encodeURIComponent(productName)}. Voici l'image: ${imageUrl}`;
+    window.location.href = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
   };
 
   const removeFromFavorites = (id) => {
@@ -92,14 +95,14 @@ const ProductManager = () => {
             <div className="flex space-x-2 mt-2">
               <button onClick={(e) => {
                 e.stopPropagation();
-                handleEmail(product.email, product.name);
+                handleEmail(product.email, product.name, product.imageUrl);
               }} 
               className="bg-blue-500 text-white p-2 rounded">
                 <FaEnvelope />
               </button>
               <button onClick={(e) => {
                 e.stopPropagation();
-                handleWhatsApp(product.phoneNumber, product.name);
+                handleWhatsApp(product.phoneNumber, product.name, product.imageUrl);
               }} 
               className="bg-green-500 text-white p-2 rounded">
                 <FaWhatsapp />
@@ -135,10 +138,10 @@ const ProductManager = () => {
                       <button onClick={() => removeFromFavorites(favori.id)} className="text-red-500">
                         <FaTrash />
                       </button>
-                      <button onClick={() => handleEmail(favori.email, favori.name)} className="bg-blue-500 text-white p-2 rounded">
+                      <button onClick={() => handleEmail(favori.email, favori.name, favori.imageUrl)} className="bg-blue-500 text-white p-2 rounded">
                         <FaEnvelope />
                       </button>
-                      <button onClick={() => handleWhatsApp(favori.phoneNumber, favori.name)} className="bg-green-500 text-white p-2 rounded">
+                      <button onClick={() => handleWhatsApp(favori.phoneNumber, favori.name, favori.imageUrl)} className="bg-green-500 text-white p-2 rounded">
                         <FaWhatsapp />
                       </button>
                     </td>
@@ -161,10 +164,10 @@ const ProductManager = () => {
               <h3 className="text-xl font-semibold">{product.name}</h3>
               <p className="text-lg font-bold">{product.price}</p>
               <div className="flex space-x-2 mt-2">
-                <button onClick={() => handleEmail(product.email, product.name)} className="bg-blue-500 text-white p-2 rounded">
+                <button onClick={() => handleEmail(product.email, product.name, product.imageUrl)} className="bg-blue-500 text-white p-2 rounded">
                   <FaEnvelope />
                 </button>
-                <button onClick={() => handleWhatsApp(product.phoneNumber, product.name)} className="bg-green-500 text-white p-2 rounded">
+                <button onClick={() => handleWhatsApp(product.phoneNumber, product.name, product.imageUrl)} className="bg-green-500 text-white p-2 rounded">
                   <FaWhatsapp />
                 </button>
               </div>

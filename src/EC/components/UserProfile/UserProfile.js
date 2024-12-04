@@ -9,6 +9,8 @@ import { FaGoogle, FaEnvelope, FaWhatsapp } from 'react-icons/fa';
 const UserProfile = () => {
   const [user, setUser] = useState(null);
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [productName, setProductName] = useState('');
   const [productImage, setProductImage] = useState(null);
   const [productDescription, setProductDescription] = useState('');
@@ -28,6 +30,23 @@ const UserProfile = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (searchTerm) {
+      const lowercasedSearchTerm = searchTerm.toLowerCase();
+      const filtered = products.filter(product =>
+        product.name.toLowerCase().includes(lowercasedSearchTerm) ||
+        product.description.toLowerCase().includes(lowercasedSearchTerm) ||
+        product.phoneNumber.includes(lowercasedSearchTerm) ||
+        product.email.toLowerCase().includes(lowercasedSearchTerm) ||
+        product.price.toLowerCase().includes(lowercasedSearchTerm) ||
+        product.stock.toString().includes(lowercasedSearchTerm)
+      );
+      setFilteredProducts(filtered);
+    } else {
+      setFilteredProducts(products);
+    }
+  }, [searchTerm, products]);
+
   const fetchProducts = (userId) => {
     const q = query(collection(db, "file"), where("userId", "==", userId));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -36,6 +55,7 @@ const UserProfile = () => {
         productsData.push({ id: doc.id, ...doc.data() });
       });
       setProducts(productsData);
+      setFilteredProducts(productsData);
     });
     return unsubscribe;
   };
@@ -197,8 +217,18 @@ const UserProfile = () => {
             </button>
           </form>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map((product) => (
+          {/* Search Input */}
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search products..."
+            className="w-full p-2 border border-gray-300 rounded mb-4"
+          />
+
+          {/* Conteneur de produits avec défilement */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto max-h-96">
+            {filteredProducts.map((product) => (
               <div key={product.id} className="bg-white p-4 shadow-md rounded">
                 <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover mb-4 rounded" />
                 <h3 className="text-xl font-semibold">{product.name}</h3>
